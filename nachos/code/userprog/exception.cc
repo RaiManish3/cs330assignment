@@ -159,7 +159,7 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
 	else if ((type == SysCall_GetReg)){
-	machine->WriteRegister(2,(unsigned)machine->ReadRegister(4));
+	machine->WriteRegister(2,(unsigned)machine->ReadRegister(machine->ReadRegister(4)));
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
@@ -174,10 +174,6 @@ ExceptionHandler(ExceptionType which)
 		
 			int virtAddr=(unsigned)machine->ReadRegister(4);
 
-//		    DEBUG('a', "\tTranslate 0x%x, %s: ", virtAddr, writing ? "write" : "read");
-
-
-		    
 		    // we must have either a TLB or a page table, but not both!
 		    ASSERT(machine->tlb == NULL || machine->KernelPageTable == NULL);	
 		    ASSERT(machine->tlb != NULL || (machine->KernelPageTable) != NULL);	
@@ -188,65 +184,51 @@ ExceptionHandler(ExceptionType which)
 		    offset = (unsigned) virtAddr % PageSize;
 		    
 		    if ((machine->tlb) == NULL) {		// => page table => vpn is index into table
-			if (vpn >= machine->pageTableSize) {
-			    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
-					virtAddr, machine->pageTableSize);
-			    //return AddressErrorException;
-				isError=true;
-			} else if (!(machine->KernelPageTable)[vpn].valid) {
-			    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
-					virtAddr, machine->pageTableSize);
-			    //return PageFaultException;
-				isError=true;
-			}
-			entry = &(machine->KernelPageTable)[vpn];
+                if (vpn >= machine->pageTableSize) {
+                    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+                        virtAddr, machine->pageTableSize);
+                    isError=true;
+                } else if (!(machine->KernelPageTable)[vpn].valid) {
+                    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+                        virtAddr, machine->pageTableSize);
+                    isError=true;
+                }
+                entry = &(machine->KernelPageTable)[vpn];
 		    } else {
-			for (entry = NULL, i = 0; i < TLBSize; i++)
-		    	    if ((machine->tlb)[i].valid && ((machine->tlb)[i].virtualPage == (unsigned)vpn)) {
-				entry = &(machine->tlb)[i];			// FOUND!
-				break;
-			    }
-			if (entry == NULL) {				// not found
-		    	    DEBUG('a', "*** no valid TLB entry found for this virtual page!\n");
-				isError=true;
-		    	    //return PageFaultException;		// really, this is a TLB fault,
-								// the page may be in memory,
-								// but not in the TLB
-			}
+                for (entry = NULL, i = 0; i < TLBSize; i++)
+                    if ((machine->tlb)[i].valid && ((machine->tlb)[i].virtualPage == (unsigned)vpn)) {
+                    entry = &(machine->tlb)[i];			// FOUND!
+                    break;
+                    }
+                if (entry == NULL) {				// not found
+                    DEBUG('a', "*** no valid TLB entry found for this virtual page!\n");
+                    isError=true;
+                }
 		    }
-		if(!isError){
-/*		    if (entry->readOnly && writing) {	// trying to write to a read-only page
-			DEBUG('a', "%d mapped read-only at %d in TLB!\n", virtAddr, i);
-			//return ReadOnlyException;
-				isError=true;
-		    }*/
-		    pageFrame = entry->physicalPage;
+            if(!isError){
+                pageFrame = entry->physicalPage;
 
-		    // if the pageFrame is too big, there is something really wrong! 
-		    // An invalid translation was loaded into the page table or TLB. 
-		    if (pageFrame >= NumPhysPages) { 
-			DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
-			//return BusErrorException;
-				isError=true;
-		    }
-		    entry->use = TRUE;		// set the use, dirty bits
-		 //   if (writing)
-		//	entry->dirty = TRUE;
-			machine->WriteRegister(2, pageFrame * PageSize + offset);
-		   // ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
-		    //DEBUG('a', "phys addr = 0x%x\n", *physAddr);
-		    //return NoException;
-		}
-		if(isError){
-			machine->WriteRegister(2,-1);
-		}
-		       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-		       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-		       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+                // if the pageFrame is too big, there is something really wrong! 
+                // An invalid translation was loaded into the page table or TLB. 
+                if (pageFrame >= NumPhysPages) { 
+                    DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
+                    isError=true;
+                }
+                else{
+                    entry->use = TRUE;		// set the use, dirty bits
+                    machine->WriteRegister(2, pageFrame * PageSize + offset);
+                }
+            }
+            if(isError){
+                machine->WriteRegister(2,-1);
+            }
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 
-}
-	else{
-	printf("Unexpecte user mode exception %d %d\n", which, type);
-	ASSERT(FALSE);
-    }
+        }
+        else{
+        printf("Unexpecte user mode exception %d %d\n", which, type);
+        ASSERT(FALSE);
+        }
 }
