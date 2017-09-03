@@ -158,13 +158,13 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
-	else if ((type == SysCall_GetReg)){
-	machine->WriteRegister(2,(unsigned)machine->ReadRegister(machine->ReadRegister(4)));
+	else if ((which == SyscallException) && (type == SysCall_GetReg)){
+       machine->WriteRegister(2,(unsigned)machine->ReadRegister(machine->ReadRegister(4)));
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 }
-	else if ((type== SysCall_GetPA)){
+	else if ((which == SyscallException) && (type== SysCall_GetPA)){
 
 		    int i;
 		    unsigned int vpn, offset;
@@ -227,8 +227,20 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 
         }
+        else if((which == SyscallException) && (type==SysCall_GetPID)){
+           machine->WriteRegister(2,currentThread->getPID());
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        }
+        else if((which == SyscallException) && (type==SysCall_GetPPID)){
+           machine->WriteRegister(2,currentThread->getPPID());
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        }
         else{
-        printf("Unexpecte user mode exception %d %d\n", which, type);
+        printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
         }
 }

@@ -29,6 +29,9 @@ extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 
+//my externs
+extern int nowPID;
+
 extern bool initializedConsoleSemaphores;       // Used to initialize the semaphores for console I/O exactly once
 
 #ifdef USER_PROGRAM
