@@ -255,6 +255,12 @@ ExceptionHandler(ExceptionType which)
      machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
      machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
 	}
+	else if((type==SysCall_Yield)){
+ machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+ machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+ machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+		currentThread->YieldCPU();
+	}
 	else if ((type==SysCall_Sleep)){
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
@@ -264,7 +270,6 @@ ExceptionHandler(ExceptionType which)
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
-			
 			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT? 
 			currentThread->addToThreadSleepIntList(currentThread,sticks);
 			currentThread->PutThreadToSleep();
@@ -274,7 +279,6 @@ ExceptionHandler(ExceptionType which)
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
-
 	//printf("Total tics =%d",stats->totalTicks);
 	
 

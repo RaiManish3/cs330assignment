@@ -32,7 +32,6 @@ LaunchUserProcess(char *filename)
     }
     space = new ProcessAddressSpace(executable);    
     currentThread->space = space;
-
     delete executable;			// close file
 
     space->InitUserModeCPURegisters();		// set the initial register values
