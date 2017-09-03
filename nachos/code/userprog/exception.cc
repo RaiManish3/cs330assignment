@@ -27,6 +27,9 @@
 #include "console.h"
 #include "synch.h"
 
+// THIS IS ONLY FOR TEST PURPOSE REMOVE THIS WHILE SUBMITTING CODE
+#include <typeinfo>
+
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -158,8 +161,16 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
+<<<<<<< HEAD
 	else if ((which == SyscallException) && (type == SysCall_GetReg)){
        machine->WriteRegister(2,(unsigned)machine->ReadRegister(machine->ReadRegister(4)));
+||||||| merged common ancestors
+	else if ((type == SysCall_GetReg)){
+	machine->WriteRegister(2,(unsigned)machine->ReadRegister(4));
+=======
+	else if ((type == SysCall_GetReg)){
+	machine->WriteRegister(2,(unsigned)machine->ReadRegister((unsigned)machine->ReadRegister(4)));
+>>>>>>> 187ebe90302479ccaba83d5862bf89d82680ea0b
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
@@ -226,6 +237,7 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 
+<<<<<<< HEAD
         }
         else if((which == SyscallException) && (type==SysCall_GetPID)){
            machine->WriteRegister(2,currentThread->getPID());
@@ -243,4 +255,50 @@ ExceptionHandler(ExceptionType which)
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
         }
+||||||| merged common ancestors
+}
+	else{
+	printf("Unexpecte user mode exception %d %d\n", which, type);
+	ASSERT(FALSE);
+    }
+=======
+}
+	else if ((type== SysCall_Time)){
+
+		machine->WriteRegister(2,stats->totalTicks);	
+     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
+	}
+	else if((type==SysCall_Yield)){
+ machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+ machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+ machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+		currentThread->YieldCPU();
+	}
+	else if ((type==SysCall_Sleep)){
+		int sticks=machine->ReadRegister(4);
+		ASSERT(sticks>=0);
+		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
+		if(sticks==0){
+			currentThread->YieldCPU();
+		}else{
+			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT? 
+			currentThread->addToThreadSleepIntList(currentThread,sticks);
+			currentThread->PutThreadToSleep();
+		}
+	}
+	else{
+	printf("Unexpecte user mode exception %d %d\n", which, type);
+	ASSERT(FALSE);
+    }
+	//printf("Total tics =%d",stats->totalTicks);
+	
+
+
+	//m	 DEBUG('a', "current thread %d\n",currentThread->pid);
+
+>>>>>>> 187ebe90302479ccaba83d5862bf89d82680ea0b
 }
