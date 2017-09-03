@@ -27,6 +27,9 @@
 #include "console.h"
 #include "synch.h"
 
+// THIS IS ONLY FOR TEST PURPOSE REMOVE THIS WHILE SUBMITTING CODE
+#include <typeinfo>
+
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -159,7 +162,7 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
 	else if ((type == SysCall_GetReg)){
-	machine->WriteRegister(2,(unsigned)machine->ReadRegister(4));
+	machine->WriteRegister(2,(unsigned)machine->ReadRegister((unsigned)machine->ReadRegister(4)));
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
@@ -245,8 +248,37 @@ ExceptionHandler(ExceptionType which)
 		       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 
 }
+	else if ((type== SysCall_Time)){
+
+		machine->WriteRegister(2,stats->totalTicks);	
+     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
+	}
+	else if ((type==SysCall_Sleep)){
+		int sticks=machine->ReadRegister(4);
+		ASSERT(sticks>=0);
+		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
+		if(sticks==0){
+			currentThread->YieldCPU();
+		}else{
+			
+			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT? 
+			currentThread->addToThreadSleepIntList(currentThread,sticks);
+			currentThread->PutThreadToSleep();
+		}
+	}
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
+
+	//printf("Total tics =%d",stats->totalTicks);
+	
+
+
+	//m	 DEBUG('a', "current thread %d\n",currentThread->pid);
+
 }
