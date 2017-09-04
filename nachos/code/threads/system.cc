@@ -20,6 +20,9 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 List*threadSleepOnTimeInt;
 
+// me decls
+int nowPID;
+
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif
@@ -158,6 +161,9 @@ Initialize(int argc, char **argv)
 	timer = new Timer(TimerInterruptHandler, 0, randomYield);
 
     threadToBeDestroyed = NULL;
+
+	// edited line
+    nowPID = 5;
 
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread

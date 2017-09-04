@@ -41,6 +41,14 @@ NachOSThread::NachOSThread(char* threadName)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+    // edited line-----------------------------------------------
+    if(strcmp(threadName,"main"))
+        ppid = currentThread->getPID();
+    else
+	ppid = -1;
+    pid = nowPID+1;
+    nowPID=pid;
+    // edited line-----------------------------------------------
 #ifdef USER_PROGRAM
     space = NULL;
     stateRestored = true;
