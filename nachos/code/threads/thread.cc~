@@ -73,7 +73,7 @@ NachOSThread::~NachOSThread()
 NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
 		int wakeupticks)
 {
-		threadSleepOnTimeInt->SortedInsert(thread,wakeupticks);
+		threadSleepOnTimeInt.SortedInsert(thread,wakeupticks);
 }
 //----------------------------------------------------------------------
 // NachOSThread::ThreadFork
