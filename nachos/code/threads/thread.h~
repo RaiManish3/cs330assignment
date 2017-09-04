@@ -26,7 +26,7 @@
 //	One thing to try if you find yourself with seg faults is to
 //	increase the size of thread stack -- ThreadStackSize.
 //
-//  	In this interface, forking a thread takes two steps.
+//  	In this interface forking a thread takes two steps.
 //	We must first allocate a data structure for it: "t = new NachOSThread".
 //	Only then can we do the fork: "t->fork(f, arg)".
 //
@@ -108,10 +108,6 @@ class NachOSThread {
 						// overflowed its stack
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
-    // edited line-----------------------------------------------
-    int getPID() { return (pid); }
-    int getPPID() { return (ppid); }
-    // edited line-----------------------------------------------
     void Print() { printf("%s, ", name); }
 
   private:
