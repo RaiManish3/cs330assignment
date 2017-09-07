@@ -1,4 +1,4 @@
-// exception.cc 
+// exception.cc
 //	Entry point into the Nachos kernel from user programs.
 //	There are two kinds of things that can cause control to
 //	transfer back to here from user code:
@@ -9,7 +9,7 @@
 //
 //	exceptions -- The user code does something that the CPU can't handle.
 //	For instance, accessing memory that doesn't exist, arithmetic errors,
-//	etc.  
+//	etc.
 //
 //	Interrupts (which can also cause control to transfer from user
 //	code into the Nachos kernel) are handled elsewhere.
@@ -18,7 +18,7 @@
 // Everything else core dumps.
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
@@ -44,12 +44,12 @@
 //		arg3 -- r6
 //		arg4 -- r7
 //
-//	The result of the system call, if any, must be put back into r2. 
+//	The result of the system call, if any, must be put back into r2.
 //
 // And don't forget to increment the pc before returning. (Or else you'll
 // loop making the same system call forever!
 //
-//	"which" is the kind of exception.  The list of possible exceptions 
+//	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
 static Semaphore *readAvail;
@@ -173,26 +173,26 @@ ExceptionHandler(ExceptionType which)
 		    unsigned int vpn, offset;
 		    TranslationEntry *entry;
 		    unsigned int pageFrame;
-			bool isError=false;
-		
-			int virtAddr=(unsigned)machine->ReadRegister(4);
+			  bool isError=false;
+
+			  int virtAddr=(unsigned)machine->ReadRegister(4);
 
 		    // we must have either a TLB or a page table, but not both!
-		    ASSERT(machine->tlb == NULL || machine->KernelPageTable == NULL);	
-		    ASSERT(machine->tlb != NULL || (machine->KernelPageTable) != NULL);	
+		    ASSERT(machine->tlb == NULL || machine->KernelPageTable == NULL);
+		    ASSERT(machine->tlb != NULL || (machine->KernelPageTable) != NULL);
 
 		// calculate the virtual page number, and offset within the page,
 		// from the virtual address
 		    vpn = (unsigned) virtAddr / PageSize;
 		    offset = (unsigned) virtAddr % PageSize;
-		    
+
 		    if ((machine->tlb) == NULL) {		// => page table => vpn is index into table
                 if (vpn >= machine->pageTableSize) {
-                    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+                    DEBUG('a', "virtual page # %d too large for page table size %d!\n",
                         virtAddr, machine->pageTableSize);
                     isError=true;
                 } else if (!(machine->KernelPageTable)[vpn].valid) {
-                    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+                    DEBUG('a', "virtual page # %d too large for page table size %d!\n",
                         virtAddr, machine->pageTableSize);
                     isError=true;
                 }
@@ -211,9 +211,9 @@ ExceptionHandler(ExceptionType which)
             if(!isError){
                 pageFrame = entry->physicalPage;
 
-                // if the pageFrame is too big, there is something really wrong! 
-                // An invalid translation was loaded into the page table or TLB. 
-                if (pageFrame >= NumPhysPages) { 
+                // if the pageFrame is too big, there is something really wrong!
+                // An invalid translation was loaded into the page table or TLB.
+                if (pageFrame >= NumPhysPages) {
                     DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
                     isError=true;
                 }
@@ -244,10 +244,10 @@ ExceptionHandler(ExceptionType which)
         }
 	else if ((type== SysCall_Time)){
 
-		machine->WriteRegister(2,stats->totalTicks);	
+		machine->WriteRegister(2,stats->totalTicks);
      machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
      machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
+     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 	}
 	else if((type==SysCall_Yield)){
  machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -258,23 +258,29 @@ ExceptionHandler(ExceptionType which)
 	else if ((type==SysCall_Sleep)){
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
-		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+		 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
      machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
+     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
-			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT? 
+			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT?
 			currentThread->addToThreadSleepIntList(currentThread,sticks);
 			currentThread->PutThreadToSleep();
 		}
 	}
+  else if((which == SyscallException) && (type==SysCall_NumInstr)){
+    machine->WriteRegister(2, currentThread->retInstrCount());
+    machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+    machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+    machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+  }
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
 	//printf("Total tics =%d",stats->totalTicks);
-	
+
 
 
 	//m	 DEBUG('a', "current thread %d\n",currentThread->pid);
