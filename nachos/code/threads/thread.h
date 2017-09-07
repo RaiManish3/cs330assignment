@@ -111,6 +111,8 @@ class NachOSThread {
     // edited line-----------------------------------------------
     int getPID() { return (pid); }
     int getPPID() { return (ppid); }
+		int retInstrCount(){ return (instrCount); }
+		void increaseInstrCount(){ instrCount+=1; }
     // edited line-----------------------------------------------
     void Print() { printf("%s, ", name); }
 
@@ -128,7 +130,7 @@ class NachOSThread {
 					// Used internally by ThreadFork()
 
     int pid, ppid;			// My pid and my parent's pid
-		int instrCount;
+		int instrCount;			// My instrustion counter
 
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers --

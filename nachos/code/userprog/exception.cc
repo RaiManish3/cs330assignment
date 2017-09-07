@@ -270,7 +270,7 @@ ExceptionHandler(ExceptionType which)
 		}
 	}
   else if((which == SyscallException) && (type==SysCall_NumInstr)){
-    machine->WriteRegister(2, currentThread->instrCount);
+    machine->WriteRegister(2, currentThread->retInstrCount());
     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
