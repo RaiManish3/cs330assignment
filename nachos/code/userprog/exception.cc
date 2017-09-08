@@ -52,6 +52,10 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
+
+//my externs
+extern int threadsCount;
+
 static Semaphore *readAvail;
 static Semaphore *writeDone;
 static void ReadAvail(int arg) { readAvail->V(); }
@@ -274,6 +278,15 @@ ExceptionHandler(ExceptionType which)
     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+  }
+  else if((which == SyscallException) && (type==SysCall_Exit)){
+    int exitCode = machine->ReadRegister(4);
+
+    if(threadsCount == 1){
+      interrupt->Halt();
+    }
+
+    currentThread->FinishThread();
   }
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
