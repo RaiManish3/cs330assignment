@@ -273,6 +273,43 @@ ExceptionHandler(ExceptionType which)
 			currentThread->PutThreadToSleep();
 		}
 	}
+  else if ((which==SyscallException) && (type==SysCall_Exec)) {
+
+    //idea from PrintString syscall
+    char execName[256];
+    int curr=0;
+    vaddr=machine->ReadRegister(4);
+    machine->ReadMem(vaddr, 1, &memval);
+    while((*(char*)&memval)!='\0'){
+      execName[curr]=(*(char*)memval);
+      curr+=1;
+      vaddr+=1;
+      machine->ReadMem(vaddr,1,&memval);
+    }
+    execName[curr]=(*(char*)memval);
+
+    //Idea from LaunchUserProcess
+    OpenFile *executable = fileSystem->Open(execName);
+    ProcessAddressSpace *space;
+
+    if (executable == NULL) {
+    	printf("Unable to open file %s\n", execName);
+      machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+      machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+      machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	    return;
+    }
+    space = new ProcessAddressSpace(executable);
+    currentThread->space = space;
+	  threadSleepOnTimeInt=new List();
+    delete executable;			// close file
+
+    space->InitUserModeCPURegisters();		// set the initial register values
+    space->RestoreContextOnSwitch();		// load page table register
+
+    machine->Run();			// jump to the user progam
+    ASSERT(FALSE);			// machine->Run never returns;
+  }
   else if((which == SyscallException) && (type==SysCall_NumInstr)){
     machine->WriteRegister(2, currentThread->retInstrCount());
     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
