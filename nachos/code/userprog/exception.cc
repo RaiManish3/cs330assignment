@@ -281,7 +281,7 @@ ExceptionHandler(ExceptionType which)
     vaddr=machine->ReadRegister(4);
     machine->ReadMem(vaddr, 1, &memval);
     while((*(char*)&memval)!='\0'){
-      execName[curr]=(*(char*)memval);
+      execName[curr]=(*(char*)&memval);
       curr+=1;
       vaddr+=1;
       machine->ReadMem(vaddr,1,&memval);
@@ -300,9 +300,10 @@ ExceptionHandler(ExceptionType which)
 	    return;
     }
     space = new ProcessAddressSpace(executable);
-    currentThread->space = space;
-	  threadSleepOnTimeInt=new List();
     delete executable;			// close file
+    delete currentThread->space;
+    currentThread->space = space;
+	  //threadSleepOnTimeInt=new List();
 
     space->InitUserModeCPURegisters();		// set the initial register values
     space->RestoreContextOnSwitch();		// load page table register
