@@ -28,8 +28,11 @@ extern ProcessScheduler *scheduler;			// the thread scheduler
 extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
+extern List* threadSleepOnTimeInt;
 
 //my externs
+#define MAX_THREADS 100
+extern int AllThreadsObject[MAX_THREADS];
 extern int nowPID;
 extern unsigned TotalNumPagesUsed;
 

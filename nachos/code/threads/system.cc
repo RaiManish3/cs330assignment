@@ -1,8 +1,8 @@
-// system.cc 
+// system.cc
 //	Nachos initialization and cleanup routines.
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
@@ -18,11 +18,13 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
+List*threadSleepOnTimeInt;
 
 
 unsigned TotalNumPagesUsed;
 // me decls
 int nowPID;
+int threadsCount;
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -56,8 +58,8 @@ extern void Cleanup();
 //	Note that instead of calling YieldCPU() directly (which would
 //	suspend the interrupt handler, not the interrupted thread
 //	which is what we wanted to context switch), we set a flag
-//	so that once the interrupt handler is done, it will appear as 
-//	if the interrupted thread called YieldCPU at the point it is 
+//	so that once the interrupt handler is done, it will appear as
+//	if the interrupted thread called YieldCPU at the point it is
 //	was interrupted.
 //
 //	"dummy" is because every interrupt handler takes one argument,
@@ -66,17 +68,32 @@ extern void Cleanup();
 static void
 TimerInterruptHandler(int dummy)
 {
-    if (interrupt->getStatus() != IdleMode)
-	interrupt->YieldOnReturn();
+	//extern List* threadSleepOnTimeInt;
+    if (interrupt->getStatus() != IdleMode){
+    	if(!threadSleepOnTimeInt->IsEmpty()){
+    		int wakeuptime;
+    		IntStatus old=interrupt->SetLevel(IntOff);
+			NachOSThread* instr=NULL;
+			while((instr=((NachOSThread*)(threadSleepOnTimeInt->SortedRemove(&wakeuptime))))!=NULL && wakeuptime<=stats->totalTicks){
+				scheduler->MoveThreadToReadyQueue(instr);
+			}
+			if(instr==NULL){
+					threadSleepOnTimeInt->SortedInsert(instr,wakeuptime);
+			}
+			interrupt->SetLevel(old);
+
+		}
+		interrupt->YieldOnReturn();
+	}
 }
 
 //----------------------------------------------------------------------
 // Initialize
 // 	Initialize Nachos global data structures.  Interpret command
-//	line arguments in order to determine flags for the initialization.  
-// 
+//	line arguments in order to determine flags for the initialization.
+//
 //	"argc" is the number of command line arguments (including the name
-//		of the command) -- ex: "nachos -d +" -> argc = 3 
+//		of the command) -- ex: "nachos -d +" -> argc = 3
 //	"argv" is an array of strings, one for each command line argument
 //		ex: "nachos -d +" -> argv = {"nachos", "-d", "+"}
 //----------------------------------------------------------------------
@@ -89,6 +106,10 @@ Initialize(int argc, char **argv)
 
     initializedConsoleSemaphores = false;
 
+    //start edited line
+    threadsCount=0;
+    //end edited line
+
 #ifdef USER_PROGRAM
     bool debugUserProg = FALSE;	// single step user program
 #endif
@@ -99,7 +120,7 @@ Initialize(int argc, char **argv)
     double rely = 1;		// network reliability
     int netname = 0;		// UNIX socket name
 #endif
-    
+
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
 	argCount = 1;
 	if (!strcmp(*argv, "-d")) {
@@ -137,7 +158,7 @@ Initialize(int argc, char **argv)
 #endif
     }
     TotalNumPagesUsed=0;
-    
+
     DebugInit(debugArgs);			// initialize DEBUG messages
     stats = new Statistics();			// collect statistics
     interrupt = new Interrupt;			// start up interrupt handling
@@ -147,18 +168,19 @@ Initialize(int argc, char **argv)
 
     threadToBeDestroyed = NULL;
 
-	// edited line
-    nowPID = 5;
+    // edited line
+    nowPID = 0;
 
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
-    // object to save its state. 
-    currentThread = new NachOSThread("main");		
+    // object to save its state.
+
+    currentThread = new NachOSThread("main");
     currentThread->setStatus(RUNNING);
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C
-    
+
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
 #endif
@@ -187,7 +209,7 @@ Cleanup()
 #ifdef NETWORK
     delete postOffice;
 #endif
-    
+
 #ifdef USER_PROGRAM
     delete machine;
 #endif
@@ -199,11 +221,10 @@ Cleanup()
 #ifdef FILESYS
     delete synchDisk;
 #endif
-    
+
     delete timer;
     delete scheduler;
     delete interrupt;
-    
+
     Exit(0);
 }
-
