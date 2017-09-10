@@ -34,6 +34,7 @@ extern List* threadSleepOnTimeInt;
 #define MAX_THREADS 100
 extern int AllThreadsObject[MAX_THREADS];
 extern int nowPID;
+extern unsigned TotalNumPagesUsed;
 
 extern bool initializedConsoleSemaphores;       // Used to initialize the semaphores for console I/O exactly once
 

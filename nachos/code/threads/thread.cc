@@ -90,14 +90,12 @@ NachOSThread::~NachOSThread()
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
-
-
-	void
-NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
+/*NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
 		int wakeupticks)
 {
 		threadSleepOnTimeInt->SortedInsert(thread,wakeupticks);
 }
+*/
 //----------------------------------------------------------------------
 // NachOSThread::ThreadFork
 // 	Invoke (*func)(arg), allowing caller and callee to execute
@@ -379,6 +377,14 @@ NachOSThread::SaveUserState()
 	  userRegisters[i] = machine->ReadRegister(i);
        stateRestored = false;
     }
+}
+
+void NachOSThread::CreateThreadStack_FORK(VoidFunctionPtr func, int arg){
+	CreateThreadStack(func,arg);
+}
+
+void NachOSThread::ForkReturnsZero(){
+	*(userRegisters+2)=0;
 }
 
 //----------------------------------------------------------------------

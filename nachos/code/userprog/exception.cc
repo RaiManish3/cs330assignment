@@ -39,7 +39,7 @@
 // 	For system calls, the following is the calling convention:
 //
 // 	system call code -- r2
-//		arg1 -- r4
+//		+
 //		arg2 -- r5
 //		arg3 -- r6
 //		arg4 -- r7
@@ -77,6 +77,12 @@ static void ConvertIntToHex (unsigned v, Console *console)
       writeDone->P() ;
       console->PutChar('a'+x-10);
    }
+}
+void ForkRunUserProg(int k){
+	//THERE MAY BE SOME PROBLEM HERER
+	//--------------------------------------
+	scheduler->FORK_after_SWITCH();
+	machine->Run();
 }
 
 void
@@ -249,6 +255,7 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
         }
 	else if ((which == SyscallException) && (type== SysCall_Time)){
+
 		machine->WriteRegister(2,stats->totalTicks);
 	     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
 	     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
@@ -270,6 +277,44 @@ ExceptionHandler(ExceptionType which)
 			currentThread->YieldCPU();
 		}else{
 			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT?
+
+			//currentThread->addToThreadSleepIntList(currentThread,sticks);
+			IntStatus old =interrupt->SetLevel(IntOff);
+			currentThread->PutThreadToSleep();
+      interrupt->SetLevel(old);
+		}
+	}
+
+	else if((which ==SyscallException )&&(type==SysCall_Fork)){
+
+           IntStatus old=interrupt->SetLevel(IntOff);
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+           NachOSThread* Forked_Thread=new NachOSThread("CHild Thread");
+           printf("FORKED\n");
+           Forked_Thread->space=new ProcessAddressSpace(currentThread->space);
+           printf("SPACED\n");
+
+           Forked_Thread->SaveUserState();
+
+           printf("SAVED US STATE\n");
+           Forked_Thread->ForkReturnsZero();
+
+           printf("FORK RETRN 0 AND CREATE STACK\n");
+           Forked_Thread->CreateThreadStack_FORK(ForkRunUserProg,0);
+
+           printf("SCHEDULE IT\n");
+           scheduler->MoveThreadToReadyQueue(Forked_Thread);
+
+
+           printf("BEFORE WRITE REGISTER\n");
+           machine->WriteRegister(2,Forked_Thread->getPID());
+           printf("EXITED FROM FORK");
+           printf("%d",SyscallException);
+                interrupt->SetLevel(old);
+	}
+		else{
 			currentThread->addToThreadSleepIntList(currentThread,sticks);
 			currentThread->PutThreadToSleep();
 		}
@@ -375,9 +420,16 @@ ExceptionHandler(ExceptionType which)
   }
 
 	else{
+
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
+/*	else if(( which==SyscallException) && ((type==SysCall_Join)){
+		NachOSThread childThread = new NachOSThread(strcat("Child thread of Parent",to_string(currentThread->pid));
+
+
+	}*/
+
 	//printf("Total tics =%d",stats->totalTicks);
 
 

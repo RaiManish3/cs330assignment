@@ -57,6 +57,33 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
+
+ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *space){
+	numVirtualPages=space->NumVirtualPages();
+
+	ASSERT(numVirtualPages+TotalNumPagesUsed<=NumPhysPages);
+	
+    KernelPageTable = new TranslationEntry[numVirtualPages];
+    TranslationEntry* pTable = space->getPageTable();
+    
+    for (int i = 0; i < numVirtualPages; i++) {
+	KernelPageTable[i].virtualPage = i;
+	KernelPageTable[i].physicalPage = i+TotalNumPagesUsed;
+	KernelPageTable[i].valid = pTable[i].valid;
+	KernelPageTable[i].use = pTable[i].use;
+	KernelPageTable[i].dirty = pTable[i].dirty;
+	KernelPageTable[i].readOnly = pTable[i].readOnly;  // if the code segment was entirely on 
+					// a separate page, we could set its 
+					// pages to be read-only
+    }
+    unsigned b=((*(space->getPageTable())).physicalPage*PageSize);
+	  
+    for (int k=0;k<numVirtualPages*PageSize;k++){
+    	machine->mainMemory[k+(TotalNumPagesUsed*PageSize)]=machine->mainMemory[k+b];
+     }
+    TotalNumPagesUsed=TotalNumPagesUsed+numVirtualPages;
+}
+
 ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
 {
     NoffHeader noffH;
@@ -75,7 +102,7 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
     numVirtualPages = divRoundUp(size, PageSize);
     size = numVirtualPages * PageSize;
 
-    ASSERT(numVirtualPages <= NumPhysPages);		// check we're not trying
+    ASSERT(numVirtualPages +TotalNumPagesUsed <= NumPhysPages);		// check we're not trying
 						// to run anything too big --
 						// at least until we have
 						// virtual memory
@@ -85,8 +112,12 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
 // first, set up the translation 
     KernelPageTable = new TranslationEntry[numVirtualPages];
     for (i = 0; i < numVirtualPages; i++) {
-	KernelPageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-	KernelPageTable[i].physicalPage = i;
+	KernelPageTable[i].virtualPage = i;	
+	// for now, virtual page # = phys page #
+	// NO, THAT NOW HAS GONE, 
+	// FROM NEW NOW, THEY ARE DIFFERENT
+	
+	KernelPageTable[i].physicalPage = i+TotalNumPagesUsed;
 	KernelPageTable[i].valid = TRUE;
 	KernelPageTable[i].use = FALSE;
 	KernelPageTable[i].dirty = FALSE;
@@ -97,9 +128,12 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
     
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
-    bzero(machine->mainMemory, size);
+    bzero(&machine->mainMemory[(TotalNumPagesUsed*PageSize)], size);
 
+	TotalNumPagesUsed=TotalNumPagesUsed+numVirtualPages;
+	printf("Inside addrspace %d\n",TotalNumPagesUsed);
 // then, copy in the code and data segments into memory
+  
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
 			noffH.code.virtualAddr, noffH.code.size);
@@ -112,6 +146,7 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
         executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]),
 			noffH.initData.size, noffH.initData.inFileAddr);
     }
+
 
 }
 
@@ -164,6 +199,15 @@ ProcessAddressSpace::InitUserModeCPURegisters()
 //
 //	For now, nothing!
 //----------------------------------------------------------------------
+
+
+TranslationEntry* ProcessAddressSpace::getPageTable(){
+	return KernelPageTable;
+}
+//Returns the Range of Pages in used in Current Thread
+unsigned ProcessAddressSpace::NumVirtualPages(){
+	return numVirtualPages;
+}
 
 void ProcessAddressSpace::SaveContextOnSwitch() 
 {}
