@@ -139,7 +139,7 @@ ExceptionHandler(ExceptionType which)
        vaddr = machine->ReadRegister(4);
        machine->ReadMem(vaddr, 1, &memval);
        while ((*(char*)&memval) != '\0') {
-	  writeDone->P() ;
+	        writeDone->P() ;
           console->PutChar(*(char*)&memval);
           vaddr++;
           machine->ReadMem(vaddr, 1, &memval);
@@ -282,6 +282,7 @@ ExceptionHandler(ExceptionType which)
     vaddr=machine->ReadRegister(4);
     machine->ReadMem(vaddr, 1, &memval);
     while((*(char*)&memval)!='\0'){
+      writeDone->P() ;
       execName[curr]=(*(char*)&memval);
       curr+=1;
       vaddr+=1;
@@ -351,9 +352,11 @@ ExceptionHandler(ExceptionType which)
       interrupt->Halt();
     }
 
+    
+
     currentThread->FinishThread();
   }
-  
+
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
