@@ -114,10 +114,11 @@ class NachOSThread {
     int joinChild(int thechild);
     int getPID() { return (pid); }
     int getPPID() { return (ppid); }
-    //int getParent();
+
     int getWaitChild(){return waitChild;}
-    int setWaitChild(int p);
+    void setWaitChild(int p);
 		void setChildExitStatus(int cpid, int stat);
+		NachOSThread* getParent(){return parentThread;}
 	int retInstrCount(){ return (instrCount); }
 	void increaseInstrCount(){ instrCount+=1; }
     // edited line-----------------------------------------------
