@@ -115,7 +115,7 @@ class NachOSThread {
     int getPID() { return (pid); }
     int getPPID() { return (ppid); }
     //int getParent();
-    int getWaitChild();
+    int getWaitChild(){return waitChild;}
     int setWaitChild(int p);
 	int retInstrCount(){ return (instrCount); }
 	void increaseInstrCount(){ instrCount+=1; }

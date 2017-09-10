@@ -259,6 +259,12 @@ NachOSThread::PutThreadToSleep ()
 	validChild checks if the given child belongs to the parent Thread.
 */
 
+void
+NachOSThread:: setWaitChild(int cpid)
+{
+    waitchild = cpid;
+}
+
 int
 NachOSThread:: validChild(int cpid)
 {

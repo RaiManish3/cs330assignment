@@ -276,18 +276,18 @@ ExceptionHandler(ExceptionType which)
             // if yes, check if it is already exited
             // if exited, return the exit code of child
             // else call the PutThreadToSleep() func
-	   thechild = currentThread->validChild(cpid);
-	   if(thechild==-1){
-		printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
-		machine->WriteRegister(2,-1);	
-	   }else{
-		ecode = currentThread->joinChild(thechild);
-		machine->WriteRegister(2,ecode);	
-	   }
-           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
-	}
+           int thechild = currentThread->validChild(cpid);
+           if(thechild==-1){
+            printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
+            machine->WriteRegister(2,-1);	
+           }else{
+            int ecode = currentThread->joinChild(thechild);
+            machine->WriteRegister(2,ecode);	
+           }
+               machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+               machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+               machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
 	else if ((which == SyscallException) && (type==SysCall_Fork)){
 	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
 	    childThread->space = new ProcessAddressSpace();    
