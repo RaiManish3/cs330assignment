@@ -277,10 +277,10 @@ ExceptionHandler(ExceptionType which)
 
   else if ((which==SyscallException) && (type==SysCall_Exec)) {
 
-IntStatus old = interrupt->SetLevel(IntOff);
+    IntStatus old = interrupt->SetLevel(IntOff);
 
     //idea from PrintString syscall
-    char execName[256];
+    char execName[100];
     int curr=0;
     vaddr = machine->ReadRegister(4);
 //printf("Here nigga");
