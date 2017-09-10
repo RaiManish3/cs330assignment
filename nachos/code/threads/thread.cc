@@ -43,17 +43,18 @@ NachOSThread::NachOSThread(char* threadName)
     status = JUST_CREATED;
     // edited line-----------------------------------------------
     pid = nowPID++;
-    AllThreadsObject[nowPID]=this;
+    //AllThreadsObject[nowPID]=this;
     if(pid>0){
         ppid = currentThread->getPID();
-	(currentThread->childPID)[currentThread->childCount++]=pid;
-	currentThread->childCount+=1;
+        (currentThread->childPID)[currentThread->childCount++]=pid;
+        currentThread->childCount+=1;
+        parentThread = currentThread;
     }
     else
-	ppid = -1;
+        ppid = -1;
     int i;
     for(i=0;i<MAX_CHILDREN;i++)
-	childExitCode[i]=-1;
+        childExitCode[i]=-1;
     childCount=0;
     waitChild=-1;
     instrCount=0;

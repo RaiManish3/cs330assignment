@@ -244,23 +244,10 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
         }
 	else if ((which == SyscallException) && (type== SysCall_Time)){
-
-<<<<<<< HEAD
 		machine->WriteRegister(2,stats->totalTicks);	
 	     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
 	     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
 	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
-||||||| merged common ancestors
-		machine->WriteRegister(2,stats->totalTicks);	
-     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
-=======
-		machine->WriteRegister(2,stats->totalTicks);
-     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
->>>>>>> fa6a310ce7415b48d9c4933d40f2fe869715e2a6
 	}
 	else if((which == SyscallException) && (type==SysCall_Yield)){
 	 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -271,19 +258,9 @@ ExceptionHandler(ExceptionType which)
 	else if ((which == SyscallException) && (type==SysCall_Sleep)){
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
-<<<<<<< HEAD
 		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
 		     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
 		     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
-||||||| merged common ancestors
-		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
-=======
-		 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
->>>>>>> fa6a310ce7415b48d9c4933d40f2fe869715e2a6
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
@@ -292,14 +269,13 @@ ExceptionHandler(ExceptionType which)
 			currentThread->PutThreadToSleep();
 		}
 	}
-<<<<<<< HEAD
 	else if ((which == SyscallException) && (type==SysCall_Join)){
            int cpid = machine->ReadRegister(4);
 	        // check if the cpid is the pid of the calling thread
 	        // if not return -1
-		// if yes, check if it is already exited
-		// if exited, return the exit code of child
-		// else call the PutThreadToSleep() func
+            // if yes, check if it is already exited
+            // if exited, return the exit code of child
+            // else call the PutThreadToSleep() func
 	   thechild = currentThread->validChild(cpid);
 	   if(thechild==-1){
 		printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
@@ -316,15 +292,12 @@ ExceptionHandler(ExceptionType which)
 	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
 	    childThread->space = new ProcessAddressSpace();    
 	}
-||||||| merged common ancestors
-=======
   else if((which == SyscallException) && (type==SysCall_NumInstr)){
     machine->WriteRegister(2, currentThread->retInstrCount());
     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
   }
->>>>>>> fa6a310ce7415b48d9c4933d40f2fe869715e2a6
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
