@@ -104,7 +104,8 @@ class NachOSThread {
     void PutThreadToSleep();  				// Put the thread to sleep and
 						// relinquish the processor
     void FinishThread();  				// The thread is done executing
-
+    
+    void ForkReturnsZero(); // This function gives 0 return value of fork() for child
     void CheckOverflow();   			// Check if thread has
 						// overflowed its stack
     void setStatus(ThreadStatus st) { status = st; }
@@ -123,6 +124,8 @@ class NachOSThread {
 	void increaseInstrCount(){ instrCount+=1; }
     // edited line-----------------------------------------------
     void Print() { printf("%s, ", name); }
+    void CreateThreadStack_FORK(VoidFunctionPtr func,int arg);
+	void addToThreadSleepIntList(NachOSThread* thread,int wakeupticks);
 
   private:
     // some of the private data for this class is listed above
@@ -144,6 +147,14 @@ class NachOSThread {
     NachOSThread* parentThread;
     int childPID[MAX_CHILDREN];
     int childExitCode[MAX_CHILDREN];
+    int childCount;
+    int waitChild;
+    // edited line-----------------------------------------------
+
+    // edited line-----------------------------------------------
+    int childPID[MAX_CHILDREN];
+    int childExitCode[MAX_CHILDREN];
+    bool ChildhasExit[MAX_CHILDREN];
     int childCount;
     int waitChild;
     // edited line-----------------------------------------------

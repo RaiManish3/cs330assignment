@@ -20,6 +20,8 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 List*threadSleepOnTimeInt;
 
+
+unsigned TotalNumPagesUsed;
 // me decls
 int nowPID;
 int threadsCount;
@@ -155,8 +157,7 @@ Initialize(int argc, char **argv)
 	}
 #endif
     }
-
-
+    TotalNumPagesUsed=0;
 
     DebugInit(debugArgs);			// initialize DEBUG messages
     stats = new Statistics();			// collect statistics
