@@ -32,7 +32,7 @@ LaunchUserProcess(char *filename)
     }
     space = new ProcessAddressSpace(executable);    
     currentThread->space = space;
-	threadSleepOnTimeInt=new List();
+	//threadSleepOnTimeInt=new List();
     delete executable;			// close file
 
     space->InitUserModeCPURegisters();		// set the initial register values

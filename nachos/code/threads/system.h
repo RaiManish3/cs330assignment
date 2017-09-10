@@ -31,6 +31,7 @@ extern Timer *timer;				// the hardware alarm clock
 
 //my externs
 extern int nowPID;
+extern unsigned TotalNumPagesUsed;
 
 extern bool initializedConsoleSemaphores;       // Used to initialize the semaphores for console I/O exactly once
 

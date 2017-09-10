@@ -39,7 +39,7 @@
 // 	For system calls, the following is the calling convention:
 //
 // 	system call code -- r2
-//		arg1 -- r4
+//		+
 //		arg2 -- r5
 //		arg3 -- r6
 //		arg4 -- r7
@@ -71,6 +71,12 @@ static void ConvertIntToHex (unsigned v, Console *console)
       writeDone->P() ;
       console->PutChar('a'+x-10);
    }
+}
+void ForkRunUserProg(int k){
+	//THERE MAY BE SOME PROBLEM HERER
+	//--------------------------------------
+	scheduler->FORK_after_SWITCH();
+	machine->Run();
 }
 
 void
@@ -242,37 +248,95 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
         }
-	else if ((type== SysCall_Time)){
+	else if ((which == SyscallException) && (type== SysCall_Time)){
 
 		machine->WriteRegister(2,stats->totalTicks);	
-     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
+	     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+	     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
 	}
-	else if((type==SysCall_Yield)){
- machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
- machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
- machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	else if((which == SyscallException) && (type==SysCall_Yield)){
+	 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+	 machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+	 machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 		currentThread->YieldCPU();
 	}
-	else if ((type==SysCall_Sleep)){
+	else if ((which == SyscallException) && (type==SysCall_Sleep)){
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
 		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
+		     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+		     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
-			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT? 
-			currentThread->addToThreadSleepIntList(currentThread,sticks);
+			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT?
+			//currentThread->addToThreadSleepIntList(currentThread,sticks);
+			interrupt->SetLevel(IntOff);
 			currentThread->PutThreadToSleep();
 		}
 	}
-	else{
+	/*else if ((which == SyscallException) && (type==SysCall_Join)){
+           int cpid = machine->ReadRegister(4);
+	        // check if the cpid is the pid of the calling thread
+	        // if not return -1
+		// if yes, check if it is already exited
+		// if exited, return the exit code of child
+		// else call the PutThreadToSleep() func
+	   thechild = currentThread->validChild(cpid);
+	   if(thechild==-1){
+		printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
+		machine->WriteRegister(2,-1);	
+	   }else{
+		ecode = currentThread->joinChild(thechild);
+		machine->WriteRegister(2,ecode);	
+	   }
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	}
+	
+	*/
+	
+	else if((which ==SyscallException )&&(type==SysCall_Fork)){
+			
+           IntStatus old=interrupt->SetLevel(IntOff);
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+           NachOSThread* Forked_Thread=new NachOSThread("CHild Thread");
+           printf("FORKED\n");
+           Forked_Thread->space=new ProcessAddressSpace(currentThread->space);
+           printf("SPACED\n");
+           
+           Forked_Thread->SaveUserState();
+           
+           printf("SAVED US STATE\n");
+           Forked_Thread->ForkReturnsZero();
+           
+           printf("FORK RETRN 0 AND CREATE STACK\n");
+           Forked_Thread->CreateThreadStack_FORK(ForkRunUserProg,0);
+           
+           printf("SCHEDULE IT\n");
+           scheduler->MoveThreadToReadyQueue(Forked_Thread);
+      
+           
+           printf("BEFORE WRITE REGISTER\n");
+           machine->WriteRegister(2,Forked_Thread->getPID());
+           printf("EXITED FROM FORK");
+           printf("%d",SyscallException);
+                interrupt->SetLevel(old);
+	}
+		else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
+/*	else if(( which==SyscallException) && ((type==SysCall_Join)){
+		NachOSThread childThread = new NachOSThread(strcat("Child thread of Parent",to_string(currentThread->pid));
+		
+	
+	}*/
+
 	//printf("Total tics =%d",stats->totalTicks);
 	
 

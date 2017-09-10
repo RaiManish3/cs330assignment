@@ -19,6 +19,8 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
+
+unsigned TotalNumPagesUsed;
 // me decls
 int nowPID;
 
@@ -134,7 +136,8 @@ Initialize(int argc, char **argv)
 	}
 #endif
     }
-
+    TotalNumPagesUsed=0;
+    
     DebugInit(debugArgs);			// initialize DEBUG messages
     stats = new Statistics();			// collect statistics
     interrupt = new Interrupt;			// start up interrupt handling

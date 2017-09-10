@@ -73,6 +73,29 @@ ProcessScheduler::SelectNextReadyThread ()
     return (NachOSThread *)listOfReadyThreads->Remove();
 }
 
+
+
+
+
+void ProcessScheduler::FORK_after_SWITCH(){
+
+	//SAME THING, AS AFTER _SWITCH in next function
+    
+    DEBUG('t', "Now in the thread \"%s\"\n", currentThread->getName());
+
+    if (threadToBeDestroyed != NULL) {
+        delete threadToBeDestroyed;
+	threadToBeDestroyed = NULL;
+    }
+    
+#ifdef USER_PROGRAM
+    if (currentThread->space != NULL) {		
+        currentThread->RestoreUserState();    
+	currentThread->space->RestoreContextOnSwitch();
+    }
+#endif
+}
+
 //----------------------------------------------------------------------
 // ProcessScheduler::ScheduleThread
 // 	Dispatch the CPU to nextThread.  Save the state of the old thread,
@@ -133,6 +156,7 @@ ProcessScheduler::ScheduleThread (NachOSThread *nextThread)
     }
 #endif
 }
+
 
 //----------------------------------------------------------------------
 // ProcessScheduler::Print

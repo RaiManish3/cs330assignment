@@ -22,6 +22,7 @@ class ProcessScheduler {
     ProcessScheduler();			// Initialize list of ready threads 
     ~ProcessScheduler();			// De-allocate ready list
 
+	void FORK_after_SWITCH();
     void MoveThreadToReadyQueue(NachOSThread* thread);	// Thread can be dispatched.
     NachOSThread* SelectNextReadyThread();		// Dequeue first thread on the ready 
 					// list, if any, and return thread.

@@ -39,12 +39,14 @@ NachOSThread::NachOSThread(char* threadName)
     stack = NULL;
     status = JUST_CREATED;
     // edited line-----------------------------------------------
-    if(strcmp(threadName,"main"))
+    pid = nowPID++;
+    if(strcmp(threadName,"main")){
         ppid = currentThread->getPID();
+	(currentThread->childPID)[currentThread->childCount++]=pid;
+	currentThread->childCount+=1;
+    }
     else
 	ppid = -1;
-    pid = nowPID+1;
-    nowPID=pid;
     // edited line-----------------------------------------------
 #ifdef USER_PROGRAM
     space = NULL;
@@ -72,7 +74,12 @@ NachOSThread::~NachOSThread()
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
-
+/*NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
+		int wakeupticks)
+{
+		threadSleepOnTimeInt->SortedInsert(thread,wakeupticks);
+}
+*/
 //----------------------------------------------------------------------
 // NachOSThread::ThreadFork
 // 	Invoke (*func)(arg), allowing caller and callee to execute 
@@ -234,6 +241,12 @@ NachOSThread::PutThreadToSleep ()
     scheduler->ScheduleThread(nextThread); // returns when we've been signalled
 }
 
+/*
+	EDITED CODE
+	validChild checks if the given child belongs to the parent Thread.
+*/
+
+
 //----------------------------------------------------------------------
 // ThreadFinish, InterruptEnable, ThreadPrint
 //	Dummy functions because C++ does not allow a pointer to a member
@@ -312,6 +325,14 @@ NachOSThread::SaveUserState()
 	  userRegisters[i] = machine->ReadRegister(i);
        stateRestored = false;
     }
+}
+
+void NachOSThread::CreateThreadStack_FORK(VoidFunctionPtr func, int arg){
+	CreateThreadStack(func,arg);
+}
+
+void NachOSThread::ForkReturnsZero(){
+	*(userRegisters+2)=0;
 }
 
 //----------------------------------------------------------------------
