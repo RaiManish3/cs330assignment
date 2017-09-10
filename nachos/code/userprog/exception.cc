@@ -274,6 +274,7 @@ ExceptionHandler(ExceptionType which)
 			currentThread->PutThreadToSleep();
 		}
 	}
+
   else if ((which==SyscallException) && (type==SysCall_Exec)) {
 
     //idea from PrintString syscall
@@ -318,21 +319,23 @@ ExceptionHandler(ExceptionType which)
            int cpid = machine->ReadRegister(4);
 	        // check if the cpid is the pid of the calling thread
 	        // if not return -1
-		// if yes, check if it is already exited
-		// if exited, return the exit code of child
-		// else call the PutThreadToSleep() func
-	   thechild = currentThread->validChild(cpid);
-	   if(thechild==-1){
-		printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
-		machine->WriteRegister(2,-1);
-	   }else{
-		ecode = currentThread->joinChild(thechild);
-		machine->WriteRegister(2,ecode);
-	   }
-           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
-	}
+
+            // if yes, check if it is already exited
+            // if exited, return the exit code of child
+            // else call the PutThreadToSleep() func
+           int thechild = currentThread->validChild(cpid);
+           if(thechild==-1){
+            printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
+            machine->WriteRegister(2,-1);
+           }else{
+            int ecode = currentThread->joinChild(thechild);
+            machine->WriteRegister(2,ecode);
+           }
+               machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+               machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+               machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+
 	else if ((which == SyscallException) && (type==SysCall_Fork)){
 	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
 	    childThread->space = new ProcessAddressSpace();
@@ -345,6 +348,7 @@ ExceptionHandler(ExceptionType which)
     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
   }
 
+
   else if((which == SyscallException) && (type==SysCall_Exit)){
     int exitCode = machine->ReadRegister(4);
 
@@ -352,7 +356,17 @@ ExceptionHandler(ExceptionType which)
       interrupt->Halt();
     }
 
-    
+    if(currentThread->parentThread!=NULL){
+      NachOSThread* pt=currentThread->parentThread;
+      pt->setChildExitStatus(currentThread->getPID(), exitCode);
+      int parentWaitForPID= pt->getWaitChild();
+      if(currentThread->getPID()==parentWaitForPID){
+        pt->setWaitChild(-1);
+        IntStatus old = interrupt->SetLevel(IntOff);
+        scheduler->MoveThreadToReadyQueue(pt);
+        (void) interrupt->SetLevel(old);
+      }
+    }
 
     currentThread->FinishThread();
   }

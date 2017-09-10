@@ -114,8 +114,12 @@ class NachOSThread {
     int joinChild(int thechild);
     int getPID() { return (pid); }
     int getPPID() { return (ppid); }
-		int retInstrCount(){ return (instrCount); }
-		void increaseInstrCount(){ instrCount+=1; }
+    //int getParent();
+    int getWaitChild(){return waitChild;}
+    int setWaitChild(int p);
+		void setChildExitStatus(int cpid, int stat);
+	int retInstrCount(){ return (instrCount); }
+	void increaseInstrCount(){ instrCount+=1; }
     // edited line-----------------------------------------------
     void Print() { printf("%s, ", name); }
 
@@ -136,6 +140,7 @@ class NachOSThread {
 		int instrCount;			// My instrustion counter
 
     // edited line-----------------------------------------------
+    NachOSThread* parentThread;
     int childPID[MAX_CHILDREN];
     int childExitCode[MAX_CHILDREN];
     int childCount;

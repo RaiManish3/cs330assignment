@@ -45,17 +45,20 @@ NachOSThread::NachOSThread(char* threadName)
     status = JUST_CREATED;
     // edited line-----------------------------------------------
     pid = nowPID++;
-    AllThreadsObject[nowPID]=this;
+    //AllThreadsObject[nowPID]=this;
     if(pid>0){
         ppid = currentThread->getPID();
-	(currentThread->childPID)[currentThread->childCount++]=pid;
-	currentThread->childCount+=1;
+        (currentThread->childPID)[currentThread->childCount++]=pid;
+        currentThread->childCount+=1;
+        parentThread = currentThread;
     }
-    else
-	ppid = -1;
+    else{
+        ppid = -1;
+        parentThread=NULL;
+    }
     int i;
     for(i=0;i<MAX_CHILDREN;i++)
-	childExitCode[i]=-1;
+        childExitCode[i]=-1;
     childCount=0;
     waitChild=-1;
     instrCount=0;
@@ -261,6 +264,12 @@ NachOSThread::PutThreadToSleep ()
 	validChild checks if the given child belongs to the parent Thread.
 */
 
+void
+NachOSThread:: setWaitChild(int cpid)
+{
+    waitchild = cpid;
+}
+
 int
 NachOSThread:: validChild(int cpid)
 {
@@ -273,6 +282,10 @@ NachOSThread:: validChild(int cpid)
 	return i;
 }
 
+void NachOSThread::setChildExitStatus(int cpid, int stat){
+  int ind= validChild(cpid);
+  childExitCode[ind]=stat;
+}
 
 int
 NachOSThread:: joinChild(int childIndex)
