@@ -31,6 +31,8 @@ extern Timer *timer;				// the hardware alarm clock
 extern List* threadSleepOnTimeInt;
 
 //my externs
+#define MAX_THREADS 100
+extern int AllThreadsObject[MAX_THREADS];
 extern int nowPID;
 
 extern bool initializedConsoleSemaphores;       // Used to initialize the semaphores for console I/O exactly once

@@ -44,12 +44,20 @@ NachOSThread::NachOSThread(char* threadName)
     stack = NULL;
     status = JUST_CREATED;
     // edited line-----------------------------------------------
-    if(strcmp(threadName,"main"))
+    pid = nowPID++;
+    AllThreadsObject[nowPID]=this;
+    if(pid>0){
         ppid = currentThread->getPID();
+	(currentThread->childPID)[currentThread->childCount++]=pid;
+	currentThread->childCount+=1;
+    }
     else
-	  ppid = -1;
-    pid = nowPID+1;
-    nowPID=pid;
+	ppid = -1;
+    int i;
+    for(i=0;i<MAX_CHILDREN;i++)
+	childExitCode[i]=-1;
+    childCount=0;
+    waitChild=-1;
     instrCount=0;
     threadsCount++;
     // edited line-----------------------------------------------
@@ -247,6 +255,38 @@ NachOSThread::PutThreadToSleep ()
 
     scheduler->ScheduleThread(nextThread); // returns when we've been signalled
 }
+
+/*
+	EDITED CODE
+	validChild checks if the given child belongs to the parent Thread.
+*/
+
+int
+NachOSThread:: validChild(int cpid)
+{
+	int i;
+	for(i=0;i<childCount;i++){
+		if(childPID[i]==cpid)
+			break;
+	}
+	if(i==childCount)return -1;
+	return i;
+}
+
+
+int
+NachOSThread:: joinChild(int childIndex)
+{
+	if(childExitCode[childIndex]<0){
+		waitChild = childPID[childIndex];
+		IntStatus oldLevel = interrupt->SetLevel(IntOff); // disable interrupts
+		PutThreadToSleep();
+		(void)interrupt->SetLevel(oldLevel);
+	}
+	return childExitCode[childIndex];
+}
+
+//	EDITED CODE--------------------------------------------------------------
 
 //----------------------------------------------------------------------
 // ThreadFinish, InterruptEnable, ThreadPrint

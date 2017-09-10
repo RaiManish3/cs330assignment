@@ -56,6 +56,8 @@
 //my externs
 extern int threadsCount;
 
+extern void LaunchUserProcess(char *file), ConsoleTest(char *in, char *out);
+
 static Semaphore *readAvail;
 static Semaphore *writeDone;
 static void ReadAvail(int arg) { readAvail->V(); }
@@ -246,25 +248,24 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
         }
-	else if ((type== SysCall_Time)){
-
+	else if ((which == SyscallException) && (type== SysCall_Time)){
 		machine->WriteRegister(2,stats->totalTicks);
-     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+	     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 	}
-	else if((type==SysCall_Yield)){
- machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
- machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
- machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	else if((which == SyscallException) && (type==SysCall_Yield)){
+	 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+	 machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+	 machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 		currentThread->YieldCPU();
 	}
-	else if ((type==SysCall_Sleep)){
+	else if ((which == SyscallException) && (type==SysCall_Sleep)){
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
-		 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+		machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+		machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
@@ -311,12 +312,38 @@ ExceptionHandler(ExceptionType which)
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
   }
+
+	else if ((which == SyscallException) && (type==SysCall_Join)){
+           int cpid = machine->ReadRegister(4);
+	        // check if the cpid is the pid of the calling thread
+	        // if not return -1
+		// if yes, check if it is already exited
+		// if exited, return the exit code of child
+		// else call the PutThreadToSleep() func
+	   thechild = currentThread->validChild(cpid);
+	   if(thechild==-1){
+		printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
+		machine->WriteRegister(2,-1);
+	   }else{
+		ecode = currentThread->joinChild(thechild);
+		machine->WriteRegister(2,ecode);
+	   }
+           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	}
+	else if ((which == SyscallException) && (type==SysCall_Fork)){
+	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
+	    childThread->space = new ProcessAddressSpace();
+	}
+
   else if((which == SyscallException) && (type==SysCall_NumInstr)){
     machine->WriteRegister(2, currentThread->retInstrCount());
     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
   }
+
   else if((which == SyscallException) && (type==SysCall_Exit)){
     int exitCode = machine->ReadRegister(4);
 
@@ -326,6 +353,7 @@ ExceptionHandler(ExceptionType which)
 
     currentThread->FinishThread();
   }
+  
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
