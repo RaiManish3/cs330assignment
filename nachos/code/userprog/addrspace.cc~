@@ -60,12 +60,7 @@ SwapHeader (NoffHeader *noffH)
 
 ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *space){
 	numVirtualPages=space->NumVirtualPages();
-	
-	
-	//REMOVE THIS IS REDUNDANT...................
-	space->RestoreContextOnSwitch();
-	
-	
+
 	ASSERT(numVirtualPages+TotalNumPagesUsed<=NumPhysPages);
 	
     KernelPageTable = new TranslationEntry[numVirtualPages];
@@ -82,21 +77,10 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *space){
 					// pages to be read-only
     }
     unsigned b=((*(space->getPageTable())).physicalPage*PageSize);
-	/*    for (int k=0;k<numVirtualPages*PageSize;k++)
-	    	printf("%c",machine->mainMemory[k]);
-	    printf("--------------------\n");
-*/
-	    
+	  
     for (int k=0;k<numVirtualPages*PageSize;k++){
     	machine->mainMemory[k+(TotalNumPagesUsed*PageSize)]=machine->mainMemory[k+b];
-    	///printf("r%d",b);
-    }
-  /*  	    for (int k=0;k<numVirtualPages*PageSize;k++)
-	    	printf("%c",machine->mainMemory[k+(TotalNumPagesUsed*PageSize)]);
-	    printf("--------------------\n");
-	*/ 
-	     
-    //printf("--i%d",TotalNumPagesUsed);
+     }
     TotalNumPagesUsed=TotalNumPagesUsed+numVirtualPages;
 }
 

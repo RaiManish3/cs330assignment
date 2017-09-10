@@ -60,12 +60,7 @@ SwapHeader (NoffHeader *noffH)
 
 ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *space){
 	numVirtualPages=space->NumVirtualPages();
-	
-	
-	//REMOVE THIS IS REDUNDANT...................
-	//space->RestoreContextOnSwitch();
-	
-	
+
 	ASSERT(numVirtualPages+TotalNumPagesUsed<=NumPhysPages);
 	
     KernelPageTable = new TranslationEntry[numVirtualPages];
@@ -82,21 +77,10 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *space){
 					// pages to be read-only
     }
     unsigned b=((*(space->getPageTable())).physicalPage*PageSize);
-	/*    for (int k=0;k<numVirtualPages*PageSize;k++)
-	    	printf("%c",machine->mainMemory[k]);
-	    printf("--------------------\n");
-*/
-	    
+	  
     for (int k=0;k<numVirtualPages*PageSize;k++){
     	machine->mainMemory[k+(TotalNumPagesUsed*PageSize)]=machine->mainMemory[k+b];
-    	///printf("r%d",b);
-    }
-  /*  	    for (int k=0;k<numVirtualPages*PageSize;k++)
-	    	printf("%c",machine->mainMemory[k+(TotalNumPagesUsed*PageSize)]);
-	    printf("--------------------\n");
-	*/ 
-	     
-    //printf("--i%d",TotalNumPagesUsed);
+     }
     TotalNumPagesUsed=TotalNumPagesUsed+numVirtualPages;
 }
 
@@ -162,28 +146,7 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
         executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]),
 			noffH.initData.size, noffH.initData.inFileAddr);
     }
-/*
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
-			noffH.code.virtualAddr, noffH.code.size);
-        unsigned vpn = noffH.code.virtualAddr/PageSize;
-        unsigned offset = noffH.code.virtualAddr%PageSize;
-        TranslationEntry* entry = &KernelPageTable[vpn];
-        unsigned pageFrame = entry->physicalPage;
-        executable->ReadAt(&(machine->mainMemory[pageFrame * PageSize + offset]),
-			noffH.code.size, noffH.code.inFileAddr);
-    }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
-			noffH.initData.virtualAddr, noffH.initData.size);
-        unsigned vpn = noffH.initData.virtualAddr/PageSize;
-        unsigned offset = noffH.initData.virtualAddr%PageSize;
-        TranslationEntry* entry = &KernelPageTable[vpn];
-        unsigned pageFrame = entry->physicalPage;
-        executable->ReadAt(&(machine->mainMemory[pageFrame * PageSize + offset]),
-			noffH.initData.size, noffH.initData.inFileAddr);
-    }
-*/
+
 
 }
 
