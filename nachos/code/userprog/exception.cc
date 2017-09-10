@@ -52,7 +52,12 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
+
+//my externs
+extern int threadsCount;
+
 extern void LaunchUserProcess(char *file), ConsoleTest(char *in, char *out);
+
 static Semaphore *readAvail;
 static Semaphore *writeDone;
 static void ReadAvail(int arg) { readAvail->V(); }
@@ -134,7 +139,7 @@ ExceptionHandler(ExceptionType which)
        vaddr = machine->ReadRegister(4);
        machine->ReadMem(vaddr, 1, &memval);
        while ((*(char*)&memval) != '\0') {
-	  writeDone->P() ;
+	        writeDone->P() ;
           console->PutChar(*(char*)&memval);
           vaddr++;
           machine->ReadMem(vaddr, 1, &memval);
@@ -244,10 +249,10 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
         }
 	else if ((which == SyscallException) && (type== SysCall_Time)){
-		machine->WriteRegister(2,stats->totalTicks);	
+		machine->WriteRegister(2,stats->totalTicks);
 	     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
 	     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
+	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 	}
 	else if((which == SyscallException) && (type==SysCall_Yield)){
 	 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -259,8 +264,8 @@ ExceptionHandler(ExceptionType which)
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
 		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-		     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-		     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
+		machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+		machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
@@ -269,35 +274,103 @@ ExceptionHandler(ExceptionType which)
 			currentThread->PutThreadToSleep();
 		}
 	}
+
+  else if ((which==SyscallException) && (type==SysCall_Exec)) {
+
+    //idea from PrintString syscall
+    char execName[256];
+    int curr=0;
+    vaddr=machine->ReadRegister(4);
+    machine->ReadMem(vaddr, 1, &memval);
+    while((*(char*)&memval)!='\0'){
+      writeDone->P() ;
+      execName[curr]=(*(char*)&memval);
+      curr+=1;
+      vaddr+=1;
+      machine->ReadMem(vaddr,1,&memval);
+    }
+    execName[curr]=(*(char*)memval);
+
+    //Idea from LaunchUserProcess
+    OpenFile *executable = fileSystem->Open(execName);
+    ProcessAddressSpace *space;
+
+    if (executable == NULL) {
+    	printf("Unable to open file %s\n", execName);
+      machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+      machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+      machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	    return;
+    }
+    space = new ProcessAddressSpace(executable);
+    delete executable;			// close file
+    delete currentThread->space;
+    currentThread->space = space;
+	  //threadSleepOnTimeInt=new List();
+
+    space->InitUserModeCPURegisters();		// set the initial register values
+    space->RestoreContextOnSwitch();		// load page table register
+
+    machine->Run();			// jump to the user progam
+    ASSERT(FALSE);			// machine->Run never returns;
+  }
+
 	else if ((which == SyscallException) && (type==SysCall_Join)){
            int cpid = machine->ReadRegister(4);
 	        // check if the cpid is the pid of the calling thread
 	        // if not return -1
+
             // if yes, check if it is already exited
             // if exited, return the exit code of child
             // else call the PutThreadToSleep() func
            int thechild = currentThread->validChild(cpid);
            if(thechild==-1){
             printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
-            machine->WriteRegister(2,-1);	
+            machine->WriteRegister(2,-1);
            }else{
             int ecode = currentThread->joinChild(thechild);
-            machine->WriteRegister(2,ecode);	
+            machine->WriteRegister(2,ecode);
            }
                machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
                machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
                machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
+
 	else if ((which == SyscallException) && (type==SysCall_Fork)){
 	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
-	    childThread->space = new ProcessAddressSpace();    
+	    childThread->space = new ProcessAddressSpace();
 	}
+
   else if((which == SyscallException) && (type==SysCall_NumInstr)){
     machine->WriteRegister(2, currentThread->retInstrCount());
     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
   }
+
+
+  else if((which == SyscallException) && (type==SysCall_Exit)){
+    int exitCode = machine->ReadRegister(4);
+
+    if(threadsCount == 1){
+      interrupt->Halt();
+    }
+
+    if(currentThread->parentThread!=NULL){
+      NachOSThread* pt=currentThread->parentThread;
+      pt->setChildExitStatus(currentThread->getPID(), exitCode);
+      int parentWaitForPID= pt->getWaitChild();
+      if(currentThread->getPID()==parentWaitForPID){
+        pt->setWaitChild(-1);
+        IntStatus old = interrupt->SetLevel(IntOff);
+        scheduler->MoveThreadToReadyQueue(pt);
+        (void) interrupt->SetLevel(old);
+      }
+    }
+
+    currentThread->FinishThread();
+  }
+
 	else{
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);

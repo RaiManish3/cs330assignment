@@ -24,6 +24,8 @@
 					// execution stack, for detecting
 					// stack overflows
 
+extern int threadsCount;
+
 //----------------------------------------------------------------------
 // NachOSThread::NachOSThread
 // 	Initialize a thread control block, so that we can then call
@@ -50,14 +52,17 @@ NachOSThread::NachOSThread(char* threadName)
         currentThread->childCount+=1;
         parentThread = currentThread;
     }
-    else
+    else{
         ppid = -1;
+        parentThread=NULL;
+    }
     int i;
     for(i=0;i<MAX_CHILDREN;i++)
         childExitCode[i]=-1;
     childCount=0;
     waitChild=-1;
     instrCount=0;
+    threadsCount++;
     // edited line-----------------------------------------------
 #ifdef USER_PROGRAM
     space = NULL;
@@ -277,6 +282,10 @@ NachOSThread:: validChild(int cpid)
 	return i;
 }
 
+void NachOSThread::setChildExitStatus(int cpid, int stat){
+  int ind= validChild(cpid);
+  childExitCode[ind]=stat;
+}
 
 int
 NachOSThread:: joinChild(int childIndex)
