@@ -267,7 +267,7 @@ NachOSThread::PutThreadToSleep ()
 void
 NachOSThread:: setWaitChild(int cpid)
 {
-    waitchild = cpid;
+    waitChild = cpid;
 }
 
 int

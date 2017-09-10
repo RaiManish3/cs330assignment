@@ -277,19 +277,23 @@ ExceptionHandler(ExceptionType which)
 
   else if ((which==SyscallException) && (type==SysCall_Exec)) {
 
+IntStatus old = interrupt->SetLevel(IntOff);
+
     //idea from PrintString syscall
     char execName[256];
     int curr=0;
-    vaddr=machine->ReadRegister(4);
+    vaddr = machine->ReadRegister(4);
+//printf("Here nigga");
     machine->ReadMem(vaddr, 1, &memval);
     while((*(char*)&memval)!='\0'){
-      writeDone->P() ;
+//printf("Still here mother");
+      //writeDone->P() ;
       execName[curr]=(*(char*)&memval);
       curr+=1;
       vaddr+=1;
       machine->ReadMem(vaddr,1,&memval);
     }
-    execName[curr]=(*(char*)memval);
+    execName[curr]='\0';
 
     //Idea from LaunchUserProcess
     OpenFile *executable = fileSystem->Open(execName);
@@ -306,11 +310,10 @@ ExceptionHandler(ExceptionType which)
     delete executable;			// close file
     delete currentThread->space;
     currentThread->space = space;
-	  //threadSleepOnTimeInt=new List();
 
     space->InitUserModeCPURegisters();		// set the initial register values
     space->RestoreContextOnSwitch();		// load page table register
-
+(void) interrupt->SetLevel(old);
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
   }
@@ -336,10 +339,10 @@ ExceptionHandler(ExceptionType which)
                machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
 
-	else if ((which == SyscallException) && (type==SysCall_Fork)){
+	/*else if ((which == SyscallException) && (type==SysCall_Fork)){
 	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
 	    childThread->space = new ProcessAddressSpace();
-	}
+	}*/
 
   else if((which == SyscallException) && (type==SysCall_NumInstr)){
     machine->WriteRegister(2, currentThread->retInstrCount());
@@ -356,8 +359,8 @@ ExceptionHandler(ExceptionType which)
       interrupt->Halt();
     }
 
-    if(currentThread->parentThread!=NULL){
-      NachOSThread* pt=currentThread->parentThread;
+    if(currentThread->getParent()!=NULL){
+      NachOSThread* pt=currentThread->getParent();
       pt->setChildExitStatus(currentThread->getPID(), exitCode);
       int parentWaitForPID= pt->getWaitChild();
       if(currentThread->getPID()==parentWaitForPID){
