@@ -11,8 +11,7 @@ So applying a composition of two "ReadRegister" functions (from machine.cc) give
 3. Syscall_GetPID ->
 ------------------
 For alloting a unique PID, we use variable "nowPID" which increments at the creation of every new thread.
-Also, we maintain a private variable "pid" for Thread Object and a public function "getPID()" to retrieve
-the PID of the thread. This pid initialises itself with nowPID at the time of creation of thread.
+Also, we maintain a private variable "pid" for Thread Object and a public function "getPID()" to retrieve the PID of the thread. This pid initialises itself with nowPID at the time of creation of thread.
 
 4. Syscall_GetPPID ->
 ------------------
