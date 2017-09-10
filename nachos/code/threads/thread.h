@@ -54,6 +54,7 @@
 // Size of the thread's private execution stack.
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
 #define StackSize	(4 * 1024)	// in words
+#define MAX_CHILDREN 100
 
 
 // Thread state
@@ -101,6 +102,8 @@ class NachOSThread {
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
     // edited line-----------------------------------------------
+    int validChild(int cpid);
+    int joinChild(int thechild);
     int getPID() { return (pid); }
     int getPPID() { return (ppid); }
     // edited line-----------------------------------------------
@@ -120,6 +123,13 @@ class NachOSThread {
 					// Used internally by ThreadFork()
 
     int pid, ppid;			// My pid and my parent's pid
+
+    // edited line-----------------------------------------------
+    int childPID[MAX_CHILDREN];
+    int childExitCode[MAX_CHILDREN];
+    int childCount;
+    int waitChild;
+    // edited line-----------------------------------------------
 
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 

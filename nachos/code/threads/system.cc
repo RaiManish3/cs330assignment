@@ -144,8 +144,8 @@ Initialize(int argc, char **argv)
 
     threadToBeDestroyed = NULL;
 
-	// edited line
-    nowPID = 5;
+    // edited line
+    nowPID = 0;
 
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
