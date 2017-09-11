@@ -14,7 +14,6 @@ main()
     if (x == 0) {
        syscall_wrapper_PrintString("Child PID: ");
        syscall_wrapper_PrintInt(syscall_wrapper_GetPID());
-	syscall_wrapper_Exit(0);
        syscall_wrapper_PrintChar('\n');
        syscall_wrapper_PrintString("Child's parent PID: ");
        syscall_wrapper_PrintInt(syscall_wrapper_GetPPID());

@@ -93,7 +93,7 @@ NachOSThread::~NachOSThread()
 void NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
 		int wakeupticks)
 {
-		threadSleepOnTimeInt->SortedInsert(thread,stats->totalTicks+wakeupticks);
+		threadSleepOnTimeInt->SortedInsert(thread,wakeupticks);
 }
 
 //----------------------------------------------------------------------

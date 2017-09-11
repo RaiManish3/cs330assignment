@@ -352,7 +352,7 @@ ExceptionHandler(ExceptionType which)
     delete currentThread->space;
     currentThread->space = space;
     currentThread->space->InitUserModeCPURegisters();		// set the initial register values
-    space->RestoreContextOnSwitch();		// load page table register
+    currentThread->space->RestoreContextOnSwitch();		// load page table register
 (void) interrupt->SetLevel(old);
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
