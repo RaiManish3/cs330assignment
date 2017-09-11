@@ -7,6 +7,7 @@ So applying a composition of two "ReadRegister" functions (from machine.cc) give
 
 2. Syscall_GetPA ->
 ------------------
+We have used some part of code of Translate method in code/machine/translate.cc with some modifications. In case of errors like pageFrame >= NumPhysPages, it will return -1 (in the register). Basically, the code is same, except that we have used if-else control instead of return statements as in Translate function. Many other initializations that are not needed in this system call are avoided.
 
 3. Syscall_GetPID ->
 ------------------
@@ -25,17 +26,31 @@ We declare a private variable "instrCount" for each process and initialize it to
 
 6. Syscall_Time ->
 ------------------
+It just prints the totalTicks from stats, by accessing totalTicks member of stats. Simply by stats->totalTicks
 
 7. Syscall_Yield ->
 ------------------
-This System call is just calling inbuild function YieldCPU()
+This System call is just calling inbuild function YieldCPU() and ofcourse, incrementing the PC. I mean that's obvious.
 
 
 8. Syscall_Sleep ->
 ------------------
+1st we read stick (sleep ticks) from register 4. If it were 0, we simply call YieldCPU(). But if it were not, we call special self made function addToThreadSleepIntList(currentThread,sticks), which adds the currentThread to a special sorted list named  threadSleepOnTimeInt, in a sorted insert fashion. We are basically made use of already made for us, list.cc implementation of lists. That was quite helpfull.
+	Now when there is a time interrupt, TimerInterruptHandler(..) function is called which is in system.cc. It checks up in threadSleepOnTimeInt, and all those whose time to wake up has passed, are woken up and put to ready queue. Since it is sorted, things are faster.
+	Then we temporarily set the interrupts Off and put thread to sleep, and then re-value the interrupts.
+	Rest is self explanatory.
 
 9. Syscall_Fork ->
 ------------------
+We have used a global variable TotalNumPagesUsed which stores the total number of Physical Pages that have been used or is using by some thread.
+In exception.cc, 1st of all we turn off the interrrupts, because some critical stuff is going to happend. We increment the PC, and we call NachOSThread(char*) function, we all know what it does. then it calls the overlaoaded constructor ProcessAddressSpace(ProcessAddressSpace*) which we've made.
+	Basically this constructor is very much similar to ProcessAddressSpace(OpenFile *executable) except that it copies the address space of parent, which is passed as an argument. NumVirtualPages() function gives the no. of virtual pages that a process uses. Currently it is not changed somewhere, but we were thinking that it may be changed in advance versions so better we make a getter function for it. The new KernelPageTable will have for all entries, various modifies (like readOnly, use, dirty) etc same as the parent KernelTable except that its virtualPage will stack from 0 and it physical page will start from TotalNumPagesUsed. Then we copy the physical memory used by parent process in the separate physical memory of the child process. And don't forget to increment the TotalNumPagesUsed by the numVirtualPages.
+	Then we save the current machine registers in userRegisters by invoking SaveUserState() funcion of the newly made Forked_Thread.
+	Then we call another self-made function ForkReturnsZero which simply put value 0 in register 2. Analogous to giving 0 return value for fork() system call.
+	Then we create the thread stack using a modified function CreateThreadStack_FORK(ForkRunUserProg,0), which is invoking the private function CreateThreadStack(...,...) which was already there. I though that was redundant, but nevertheless, it works.
+	Now we moved thread to ready queue
+	Then in we write the child process's pid in register 2 in the machine register. Note that after the current process is swithed this value will be copied to the userRegister of current process.
+
 
 10. Syscall_Exec ->
 ------------------
