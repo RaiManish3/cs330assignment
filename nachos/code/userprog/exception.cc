@@ -278,7 +278,7 @@ ExceptionHandler(ExceptionType which)
 		}else{
 			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT?
 
-			//currentThread->addToThreadSleepIntList(currentThread,sticks);
+			currentThread->addToThreadSleepIntList(currentThread,sticks);
 			IntStatus old =interrupt->SetLevel(IntOff);
 			currentThread->PutThreadToSleep();
       interrupt->SetLevel(old);
@@ -292,33 +292,29 @@ ExceptionHandler(ExceptionType which)
            machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
            NachOSThread* Forked_Thread=new NachOSThread("CHild Thread");
-           printf("FORKED\n");
+           
            Forked_Thread->space=new ProcessAddressSpace(currentThread->space);
-           printf("SPACED\n");
+
 
            Forked_Thread->SaveUserState();
 
-           printf("SAVED US STATE\n");
+
            Forked_Thread->ForkReturnsZero();
 
-           printf("FORK RETRN 0 AND CREATE STACK\n");
+
            Forked_Thread->CreateThreadStack_FORK(ForkRunUserProg,0);
 
-           printf("SCHEDULE IT\n");
+
            scheduler->MoveThreadToReadyQueue(Forked_Thread);
 
 
-           printf("BEFORE WRITE REGISTER\n");
+
            machine->WriteRegister(2,Forked_Thread->getPID());
-           printf("EXITED FROM FORK");
-           printf("%d",SyscallException);
+
+
                 interrupt->SetLevel(old);
 	}
-		else{
-			currentThread->addToThreadSleepIntList(currentThread,sticks);
-			currentThread->PutThreadToSleep();
-		}
-	}
+		
 
   else if ((which==SyscallException) && (type==SysCall_Exec)) {
 
@@ -330,16 +326,15 @@ ExceptionHandler(ExceptionType which)
     vaddr = machine->ReadRegister(4);
 //printf("Here nigga");
     machine->ReadMem(vaddr, 1, &memval);
-    while((*(char*)&memval)!='\0'){
+    while((*(char*)&memval)!='\0' && curr<100){
 //printf("Still here mother");
       //writeDone->P() ;
       execName[curr]=(*(char*)&memval);
       curr+=1;
-      vaddr+=1;
+      vaddr++;
       machine->ReadMem(vaddr,1,&memval);
     }
     execName[curr]='\0';
-
     //Idea from LaunchUserProcess
     OpenFile *executable = fileSystem->Open(execName);
     ProcessAddressSpace *space;
@@ -353,10 +348,10 @@ ExceptionHandler(ExceptionType which)
     }
     space = new ProcessAddressSpace(executable);
     delete executable;			// close file
+   if(currentThread->space!=NULL)
     delete currentThread->space;
     currentThread->space = space;
-
-    space->InitUserModeCPURegisters();		// set the initial register values
+    currentThread->space->InitUserModeCPURegisters();		// set the initial register values
     space->RestoreContextOnSwitch();		// load page table register
 (void) interrupt->SetLevel(old);
     machine->Run();			// jump to the user progam

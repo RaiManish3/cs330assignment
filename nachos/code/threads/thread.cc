@@ -90,12 +90,12 @@ NachOSThread::~NachOSThread()
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
-/*NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
+void NachOSThread::addToThreadSleepIntList(NachOSThread* thread,
 		int wakeupticks)
 {
-		threadSleepOnTimeInt->SortedInsert(thread,wakeupticks);
+		threadSleepOnTimeInt->SortedInsert(thread,stats->totalTicks+wakeupticks);
 }
-*/
+
 //----------------------------------------------------------------------
 // NachOSThread::ThreadFork
 // 	Invoke (*func)(arg), allowing caller and callee to execute

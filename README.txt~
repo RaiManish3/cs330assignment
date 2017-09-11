@@ -28,8 +28,6 @@ We declare a private variable "instrCount" for each process and initialize it to
 
 7. Syscall_Yield ->
 ------------------
-This System call is just calling inbuild function YieldCPU()
-
 
 8. Syscall_Sleep ->
 ------------------

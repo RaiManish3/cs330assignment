@@ -1,4 +1,4 @@
-// exception.cc 
+// exception.cc
 //	Entry point into the Nachos kernel from user programs.
 //	There are two kinds of things that can cause control to
 //	transfer back to here from user code:
@@ -9,7 +9,7 @@
 //
 //	exceptions -- The user code does something that the CPU can't handle.
 //	For instance, accessing memory that doesn't exist, arithmetic errors,
-//	etc.  
+//	etc.
 //
 //	Interrupts (which can also cause control to transfer from user
 //	code into the Nachos kernel) are handled elsewhere.
@@ -18,7 +18,7 @@
 // Everything else core dumps.
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
@@ -44,14 +44,20 @@
 //		arg3 -- r6
 //		arg4 -- r7
 //
-//	The result of the system call, if any, must be put back into r2. 
+//	The result of the system call, if any, must be put back into r2.
 //
 // And don't forget to increment the pc before returning. (Or else you'll
 // loop making the same system call forever!
 //
-//	"which" is the kind of exception.  The list of possible exceptions 
+//	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
+
+//my externs
+extern int threadsCount;
+
+extern void LaunchUserProcess(char *file), ConsoleTest(char *in, char *out);
+
 static Semaphore *readAvail;
 static Semaphore *writeDone;
 static void ReadAvail(int arg) { readAvail->V(); }
@@ -139,7 +145,7 @@ ExceptionHandler(ExceptionType which)
        vaddr = machine->ReadRegister(4);
        machine->ReadMem(vaddr, 1, &memval);
        while ((*(char*)&memval) != '\0') {
-	  writeDone->P() ;
+	        writeDone->P() ;
           console->PutChar(*(char*)&memval);
           vaddr++;
           machine->ReadMem(vaddr, 1, &memval);
@@ -179,26 +185,26 @@ ExceptionHandler(ExceptionType which)
 		    unsigned int vpn, offset;
 		    TranslationEntry *entry;
 		    unsigned int pageFrame;
-			bool isError=false;
-		
-			int virtAddr=(unsigned)machine->ReadRegister(4);
+			  bool isError=false;
+
+			  int virtAddr=(unsigned)machine->ReadRegister(4);
 
 		    // we must have either a TLB or a page table, but not both!
-		    ASSERT(machine->tlb == NULL || machine->KernelPageTable == NULL);	
-		    ASSERT(machine->tlb != NULL || (machine->KernelPageTable) != NULL);	
+		    ASSERT(machine->tlb == NULL || machine->KernelPageTable == NULL);
+		    ASSERT(machine->tlb != NULL || (machine->KernelPageTable) != NULL);
 
 		// calculate the virtual page number, and offset within the page,
 		// from the virtual address
 		    vpn = (unsigned) virtAddr / PageSize;
 		    offset = (unsigned) virtAddr % PageSize;
-		    
+
 		    if ((machine->tlb) == NULL) {		// => page table => vpn is index into table
                 if (vpn >= machine->pageTableSize) {
-                    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+                    DEBUG('a', "virtual page # %d too large for page table size %d!\n",
                         virtAddr, machine->pageTableSize);
                     isError=true;
                 } else if (!(machine->KernelPageTable)[vpn].valid) {
-                    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+                    DEBUG('a', "virtual page # %d too large for page table size %d!\n",
                         virtAddr, machine->pageTableSize);
                     isError=true;
                 }
@@ -217,9 +223,9 @@ ExceptionHandler(ExceptionType which)
             if(!isError){
                 pageFrame = entry->physicalPage;
 
-                // if the pageFrame is too big, there is something really wrong! 
-                // An invalid translation was loaded into the page table or TLB. 
-                if (pageFrame >= NumPhysPages) { 
+                // if the pageFrame is too big, there is something really wrong!
+                // An invalid translation was loaded into the page table or TLB.
+                if (pageFrame >= NumPhysPages) {
                     DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
                     isError=true;
                 }
@@ -250,10 +256,10 @@ ExceptionHandler(ExceptionType which)
         }
 	else if ((which == SyscallException) && (type== SysCall_Time)){
 
-		machine->WriteRegister(2,stats->totalTicks);	
+		machine->WriteRegister(2,stats->totalTicks);
 	     machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
 	     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);			
+	     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 	}
 	else if((which == SyscallException) && (type==SysCall_Yield)){
 	 machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -265,78 +271,162 @@ ExceptionHandler(ExceptionType which)
 		int sticks=machine->ReadRegister(4);
 		ASSERT(sticks>=0);
 		machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-		     machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-		     machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);	
+		machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+		machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 		if(sticks==0){
 			currentThread->YieldCPU();
 		}else{
 			// CHECK WHETHER THEV OVERALL PAHTWAY ALSO INCREMEMENTS THE PC OR NOT?
-			//currentThread->addToThreadSleepIntList(currentThread,sticks);
-			interrupt->SetLevel(IntOff);
+
+			currentThread->addToThreadSleepIntList(currentThread,sticks);
+			IntStatus old =interrupt->SetLevel(IntOff);
 			currentThread->PutThreadToSleep();
+      interrupt->SetLevel(old);
 		}
 	}
-	/*else if ((which == SyscallException) && (type==SysCall_Join)){
-           int cpid = machine->ReadRegister(4);
-	        // check if the cpid is the pid of the calling thread
-	        // if not return -1
-		// if yes, check if it is already exited
-		// if exited, return the exit code of child
-		// else call the PutThreadToSleep() func
-	   thechild = currentThread->validChild(cpid);
-	   if(thechild==-1){
-		printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
-		machine->WriteRegister(2,-1);	
-	   }else{
-		ecode = currentThread->joinChild(thechild);
-		machine->WriteRegister(2,ecode);	
-	   }
-           machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-           machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-           machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
-	}
-	
-	*/
-	
+
 	else if((which ==SyscallException )&&(type==SysCall_Fork)){
+
+           IntStatus old=interrupt->SetLevel(IntOff);
            machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
            machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
            machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
            NachOSThread* Forked_Thread=new NachOSThread("CHild Thread");
-           printf("FORKED\n");
+           
            Forked_Thread->space=new ProcessAddressSpace(currentThread->space);
-           printf("SPACED\n");
-           
+
+
            Forked_Thread->SaveUserState();
-           
-           printf("SAVED US STATE\n");
+
+
            Forked_Thread->ForkReturnsZero();
-           
-           printf("FORK RETRN 0 AND CREATE STACK\n");
+
+
            Forked_Thread->CreateThreadStack_FORK(ForkRunUserProg,0);
-           
-           printf("SCHEDULE IT\n");
-           IntStatus old=interrupt->SetLevel(IntOff);
+
+
            scheduler->MoveThreadToReadyQueue(Forked_Thread);
-           interrupt->SetLevel(old);
-           
-           printf("BEFORE WRITE REGISTER\n");
+
+
+
            machine->WriteRegister(2,Forked_Thread->getPID());
-           printf("EXITED FROM FORK");
-           printf("%d",SyscallException);
+
+
+                interrupt->SetLevel(old);
 	}
-		else{
+		
+
+  else if ((which==SyscallException) && (type==SysCall_Exec)) {
+
+    IntStatus old = interrupt->SetLevel(IntOff);
+
+    //idea from PrintString syscall
+    char execName[100];
+    int curr=0;
+    vaddr = machine->ReadRegister(4);
+//printf("Here nigga");
+    machine->ReadMem(vaddr, 1, &memval);
+    while((*(char*)&memval)!='\0' && curr<100){
+//printf("Still here mother");
+      //writeDone->P() ;
+      execName[curr]=(*(char*)&memval);
+      curr+=1;
+      vaddr++;
+      machine->ReadMem(vaddr,1,&memval);
+    }
+    execName[curr]='\0';
+    //Idea from LaunchUserProcess
+    OpenFile *executable = fileSystem->Open(execName);
+    ProcessAddressSpace *space;
+
+    if (executable == NULL) {
+    	printf("Unable to open file %s\n", execName);
+      machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+      machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+      machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+	    return;
+    }
+    space = new ProcessAddressSpace(executable);
+    delete executable;			// close file
+   if(currentThread->space!=NULL)
+    delete currentThread->space;
+    currentThread->space = space;
+    currentThread->space->InitUserModeCPURegisters();		// set the initial register values
+    currentThread->space->RestoreContextOnSwitch();		// load page table register
+(void) interrupt->SetLevel(old);
+    machine->Run();			// jump to the user progam
+    ASSERT(FALSE);			// machine->Run never returns;
+  }
+
+	else if ((which == SyscallException) && (type==SysCall_Join)){
+           int cpid = machine->ReadRegister(4);
+	        // check if the cpid is the pid of the calling thread
+	        // if not return -1
+
+            // if yes, check if it is already exited
+            // if exited, return the exit code of child
+            // else call the PutThreadToSleep() func
+           int thechild = currentThread->validChild(cpid);
+           if(thechild==-1){
+            printf("no child with pid: %d exists for parent: %d",cpid, currentThread->getPID());
+            machine->WriteRegister(2,-1);
+           }else{
+            int ecode = currentThread->joinChild(thechild);
+            machine->WriteRegister(2,ecode);
+           }
+               machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+               machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+               machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+
+	/*else if ((which == SyscallException) && (type==SysCall_Fork)){
+	    NachOSThread childThread = new NachOSThread(strcat("Child thread of parent",to_string(currentThread->pid));
+	    childThread->space = new ProcessAddressSpace();
+	}*/
+
+  else if((which == SyscallException) && (type==SysCall_NumInstr)){
+    machine->WriteRegister(2, currentThread->retInstrCount());
+    machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+    machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+    machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+  }
+
+
+  else if((which == SyscallException) && (type==SysCall_Exit)){
+    int exitCode = machine->ReadRegister(4);
+
+    if(threadsCount == 1){
+      interrupt->Halt();
+    }
+
+    if(currentThread->getParent()!=NULL){
+      NachOSThread* pt=currentThread->getParent();
+      pt->setChildExitStatus(currentThread->getPID(), exitCode);
+      int parentWaitForPID= pt->getWaitChild();
+      if(currentThread->getPID()==parentWaitForPID){
+        pt->setWaitChild(-1);
+        IntStatus old = interrupt->SetLevel(IntOff);
+        scheduler->MoveThreadToReadyQueue(pt);
+        (void) interrupt->SetLevel(old);
+      }
+    }
+
+    currentThread->FinishThread();
+  }
+
+	else{
+
 	printf("Unexpecte user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
 /*	else if(( which==SyscallException) && ((type==SysCall_Join)){
 		NachOSThread childThread = new NachOSThread(strcat("Child thread of Parent",to_string(currentThread->pid));
-		
-	
+
+
 	}*/
 
 	//printf("Total tics =%d",stats->totalTicks);
-	
+
 
 
 	//m	 DEBUG('a', "current thread %d\n",currentThread->pid);

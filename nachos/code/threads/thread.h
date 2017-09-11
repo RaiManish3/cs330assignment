@@ -125,7 +125,6 @@ class NachOSThread {
     // edited line-----------------------------------------------
     void Print() { printf("%s, ", name); }
     void CreateThreadStack_FORK(VoidFunctionPtr func,int arg);
-	void addToThreadSleepIntList(NachOSThread* thread,int wakeupticks);
 
   private:
     // some of the private data for this class is listed above
@@ -135,6 +134,7 @@ class NachOSThread {
 					// (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
+			NachOSThread* parentThread;
 
     void CreateThreadStack(VoidFunctionPtr func, int arg);
     					// Allocate a stack for thread.
@@ -143,13 +143,6 @@ class NachOSThread {
     int pid, ppid;			// My pid and my parent's pid
 		int instrCount;			// My instrustion counter
 
-    // edited line-----------------------------------------------
-    NachOSThread* parentThread;
-    int childPID[MAX_CHILDREN];
-    int childExitCode[MAX_CHILDREN];
-    int childCount;
-    int waitChild;
-    // edited line-----------------------------------------------
 
     // edited line-----------------------------------------------
     int childPID[MAX_CHILDREN];
